@@ -17,7 +17,7 @@
 const chai = require('chai');
 const assert = chai.assert;
 
-const { Universal, MemoryAccount, Node } = require('@aeternity/aepp-sdk');
+const {Universal, MemoryAccount, Node} = require('@aeternity/aepp-sdk');
 
 const NETWORKS = require('../config/network.json');
 const NETWORK_NAME = "testnet";
@@ -25,20 +25,19 @@ const NETWORK_NAME = "testnet";
 const {defaultWallets: WALLETS} = require('../config/wallets.json');
 
 const contractUtils = require('../utils/contract-utils');
-const EXAMPLE_CONTRACT_SOURCE = './contracts/ExampleContract.aes';
+const EXAMPLE_CONTRACT_SOURCE = './contracts/VegasMarketContact.aes';
 
-describe('ExampleContract', () => {
+describe('VegasMarketContact', () => {
     let contract;
-    let hamsterName;
 
     before(async () => {
-        const node = await Node({ url: NETWORKS[NETWORK_NAME].nodeUrl });
+        const node = await Node({url: NETWORKS[NETWORK_NAME].nodeUrl});
         const client = await Universal({
             nodes: [
-              { name: NETWORK_NAME, instance: node },
+                {name: NETWORK_NAME, instance: node},
             ],
             compilerUrl: NETWORKS[NETWORK_NAME].compilerUrl,
-            accounts: [MemoryAccount({ keypair: WALLETS[0] })],
+            accounts: [MemoryAccount({keypair: WALLETS[0]})],
             address: WALLETS[0].publicKey
         });
         try {
@@ -48,42 +47,110 @@ describe('ExampleContract', () => {
             const contract_content = contractUtils.getContractContent(EXAMPLE_CONTRACT_SOURCE);
             // initialize the contract instance
             contract = await client.getContractInstance(contract_content, {filesystem});
-        } catch(err) {
+        } catch (err) {
             console.error(err);
             assert.fail('Could not initialize contract instance');
         }
     });
 
-    it('Should deploy ExampleContract', async () => {
-        await contract.deploy([]);
+    it('Should deploy VegasMarketContact', async () => {
+        let ctAddress = await contract.deploy([]);
+        console.log(ctAddress.address);
     });
 
-    it('Should check if hamster has been created', async () => {
-        hamsterName = 'C.Hamster';
-        await contract.methods.createHamster(hamsterName);
-        const result = await contract.methods.nameExists(hamsterName);
-        assert.isTrue(result.decodedResult, 'hamster has not been created');
+
+    it('Should add_market VegasMarketContact', async () => {
+        await contract.methods.add_market(
+            "content",
+            "source_url",
+            1,
+            -1,
+            [{
+                content: "answer_content0",
+                accounts: [],
+            }, {
+                content: "answer_content1",
+                accounts: [],
+            }]);
     });
 
-    it('Should REVERT if hamster already exists', async () => {
-        try {
-            await contract.methods.createHamster('C.Hamster');
-            assert.fail(`createHamster didn't fail`);
-        } catch(err) {
-            assert.include(err.message, 'Name is already taken', `expected error message doesn't exist`);
-        }
+
+    it('Should add_market VegasMarketContact', async () => {
+        await contract.methods.add_market(
+            "content",
+            "source_url",
+            1,
+            -1,
+            [{
+                content: "answer_content0",
+                accounts: [],
+            }, {
+                content: "answer_content1",
+                accounts: [],
+            }]);
+    });
+    it('Should add_market VegasMarketContact', async () => {
+        await contract.methods.add_market(
+            "content",
+            "source_url",
+            1,
+            -1,
+            [{
+                content: "answer_content0",
+                accounts: [],
+            }, {
+                content: "answer_content1",
+                accounts: [],
+            }]);
+    });
+    it('Should add_market VegasMarketContact', async () => {
+        await contract.methods.add_market(
+            "content",
+            "source_url",
+            1,
+            -1,
+            [{
+                content: "answer_content0",
+                accounts: [],
+            }, {
+                content: "answer_content1",
+                accounts: [],
+            }]);
     });
 
-    it('Should return false if name does not exist', async () => {
-        hamsterName = 'DoesHamsterExist';
-        const result = await contract.methods.nameExists(hamsterName);
-        assert.isFalse(result.decodedResult);
+
+    it('Should get_state VegasMarketContact', async () => {
+        const result = await contract.methods.get_state();
+        console.log(JSON.stringify(result.decodedResult));
     });
 
-    it('Should return true if the name exists', async () => {
-        hamsterName = 'DoesHamsterExist';
-        await contract.methods.createHamster(hamsterName)
-        const result = await contract.methods.nameExists(hamsterName);
-        assert.isTrue(result.decodedResult)
-    });
+
+    // it('Should check if hamster has been created', async () => {
+    //     hamsterName = 'C.Hamster';
+    //     await contract.methods.createHamster(hamsterName);
+    //     const result = await contract.methods.nameExists(hamsterName);
+    //     assert.isTrue(result.decodedResult, 'hamster has not been created');
+    // });
+    //
+    // it('Should REVERT if hamster already exists', async () => {
+    //     try {
+    //         await contract.methods.createHamster('C.Hamster');
+    //         assert.fail(`createHamster didn't fail`);
+    //     } catch(err) {
+    //         assert.include(err.message, 'Name is already taken', `expected error message doesn't exist`);
+    //     }
+    // });
+    //
+    // it('Should return false if name does not exist', async () => {
+    //     hamsterName = 'DoesHamsterExist';
+    //     const result = await contract.methods.nameExists(hamsterName);
+    //     assert.isFalse(result.decodedResult);
+    // });
+    //
+    // it('Should return true if the name exists', async () => {
+    //     hamsterName = 'DoesHamsterExist';
+    //     await contract.methods.createHamster(hamsterName)
+    //     const result = await contract.methods.nameExists(hamsterName);
+    //     assert.isTrue(result.decodedResult)
+    // });
 });

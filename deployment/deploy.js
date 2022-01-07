@@ -20,9 +20,10 @@ const contractUtils = require('../utils/contract-utils');
 const NETWORKS = require('../config/network.json');
 const DEFAULT_NETWORK_NAME = 'local';
 
-const EXAMPLE_CONTRACT_SOURCE = './contracts/ExampleContract.aes';
+const EXAMPLE_CONTRACT_SOURCE = './contracts/VegasMarketContact.aes';
 
 const deploy = async (secretKey, network, compiler) => {
+    console.log("123123123");
     if(!secretKey) {
         throw new Error(`Required option missing: secretKey`);
     }
@@ -30,6 +31,7 @@ const deploy = async (secretKey, network, compiler) => {
         secretKey: secretKey,
         publicKey: Crypto.getAddressFromPriv(secretKey)
     }
+    console.log("123123123");
     const NETWORK_NAME = network ? network : DEFAULT_NETWORK_NAME;
 
     const client = await Universal({
@@ -46,6 +48,7 @@ const deploy = async (secretKey, network, compiler) => {
     const contract_content = contractUtils.getContractContent(EXAMPLE_CONTRACT_SOURCE);
     contract = await client.getContractInstance(contract_content, {filesystem});
     const deployment_result = await contract.deploy([]);
+    console.log("123123123");
     console.log(deployment_result);
 };
 

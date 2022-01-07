@@ -1,0 +1,116 @@
+@compiler >= 6
+
+include "String.aes"
+
+contract VegasMarketContact =
+
+    /**
+     * Vegas的合约状态
+     * - markets: 存放所有用户发起的投注信息
+     * - user_markets_record: 已参与过投注的历史记录
+     * - owner: 合约归属者
+     * - aggregator_user: 合约的管理账户
+     */
+    record state = {
+        markets             : map(address, map(int, market)),
+        user_markets_record : map(address, map(address, map(int, market))),
+        owner               : address,
+        aggregator_user     : map(address, string)}
+
+    /**
+     * 预测详情信息
+     * - content: 预测的内容
+     * - source_url: 预测的结果查询url地址
+     * - answers: 预测的答案选项
+     * - create_height: 发布预测时候的创建的高度
+     * - create_time: 创建预测的时间
+     * - min_amount: 最小的投注金额
+     * - total_amount: 当前预测已经投注的总金额
+     * - result: 该预测的答案是什么
+     * - progress: 当前预测的进度（0）进行中的状态，（1）等待结果状态，（2）已结束的状态
+     * - status: 当前预测的类型（0）聚合器模式，（1）私有模式
+     */
+    record market = {
+        content       : string,
+        source_url    : string,
+        answers       : list(answer),
+        create_height : int,
+        create_time   : int,
+        over_time     : int,
+        min_amount    : int,
+        total_amount  : int,
+        result        : int,
+        progress      : int,
+        status        : int}
+
+    /**
+     * 预测的答案
+     * - content: 预测答案的内容
+     * - accounts: 已经投注的用户
+     */
+    record answer = {
+        content  : string,
+        accounts : list(address)}
+
+
+    stateful entrypoint
+        init : () => state
+        init () =
+            let owner             = Call.caller
+            { markets             = {},
+              user_markets_record = {},
+              owner               = Call.caller,
+              aggregator_user     = {} }
+
+    /**
+     * 发布一个预测，只有聚合器用户才可以发布 status=(1) 的预测
+     */
+    stateful entrypoint
+        add_market : (string,string,int,int,list(answer)) => market
+        add_market (content,source_url,min_amount,over_time,answers) =
+            let market = {
+                content       = content,
+                source_url    = source_url,
+                answers       = answers,
+                create_height = Chain.block_height,
+                create_time   = Chain.timestamp,
+                over_time     = Chain.timestamp + over_time,
+                min_amount    = min_amount,
+                total_amount  = 0,
+                result        = -1,
+                progress      = 0,
+                status        = 0}
+
+            switch(Map.lookup(Call.caller, state.markets))
+                Some(account) => put(state {markets[Call.caller][Chain.timestamp] = market})
+                None => put(state {markets[Call.caller = {}][Chain.timestamp] = market})
+
+            market
+
+
+
+    /**
+     * 当前调用者是否属于可发布聚合器账户列表中
+     */
+    function
+        is_aggregator_user : () => bool
+        is_aggregator_user() =
+            switch(Map.lookup(Call.caller, state.aggregator_user))
+                Some(user) => true
+                None => false
+
+
+
+
+
+    entrypoint
+        get_state:()=>state
+        get_state () =
+            state
+
+
+
+
+
+
+
