@@ -29,7 +29,7 @@ const EXAMPLE_CONTRACT_SOURCE = './contracts/VegasMarketContact.aes';
 
 describe('VegasMarketContact', () => {
     let contract;
-
+    let marketId;
     before(async () => {
         const node = await Node({url: NETWORKS[NETWORK_NAME].nodeUrl});
         const client = await Universal({
@@ -60,11 +60,11 @@ describe('VegasMarketContact', () => {
 
 
     it('Should add_market VegasMarketContact', async () => {
-        await contract.methods.add_market(
+        const result = await contract.methods.add_market(
             "content",
             "source_url",
             1,
-            -1,
+            86400000,
             [{
                 content: "answer_content0",
                 accounts: [],
@@ -72,55 +72,33 @@ describe('VegasMarketContact', () => {
                 content: "answer_content1",
                 accounts: [],
             }]);
+        marketId = result.decodedResult.market_id;
+        console.log(marketId);
+
+    });
+
+    it('Should submit_answer VegasMarketContact', async () => {
+        const result = await contract.methods.submit_answer(WALLETS[0].publicKey,marketId,0);
+
+        console.log(JSON.stringify(result.decodedResult));
     });
 
 
-    it('Should add_market VegasMarketContact', async () => {
-        await contract.methods.add_market(
-            "content",
-            "source_url",
-            1,
-            -1,
-            [{
-                content: "answer_content0",
-                accounts: [],
-            }, {
-                content: "answer_content1",
-                accounts: [],
-            }]);
-    });
-    it('Should add_market VegasMarketContact', async () => {
-        await contract.methods.add_market(
-            "content",
-            "source_url",
-            1,
-            -1,
-            [{
-                content: "answer_content0",
-                accounts: [],
-            }, {
-                content: "answer_content1",
-                accounts: [],
-            }]);
-    });
-    it('Should add_market VegasMarketContact', async () => {
-        await contract.methods.add_market(
-            "content",
-            "source_url",
-            1,
-            -1,
-            [{
-                content: "answer_content0",
-                accounts: [],
-            }, {
-                content: "answer_content1",
-                accounts: [],
-            }]);
+    it('Should submit_answer VegasMarketContact', async () => {
+        const result = await contract.methods.submit_answer(WALLETS[0].publicKey,marketId,1);
+
+        console.log(JSON.stringify(result.decodedResult));
     });
 
+    it('Should submit_answer VegasMarketContact', async () => {
+        const result = await contract.methods.submit_answer(WALLETS[0].publicKey,marketId,1);
+
+        console.log(JSON.stringify(result.decodedResult));
+    });
 
     it('Should get_state VegasMarketContact', async () => {
         const result = await contract.methods.get_state();
+
         console.log(JSON.stringify(result.decodedResult));
     });
 

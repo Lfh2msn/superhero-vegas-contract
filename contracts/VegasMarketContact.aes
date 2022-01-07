@@ -1,6 +1,7 @@
 @compiler >= 6
 
 include "String.aes"
+include "List.aes"
 
 contract VegasMarketContact =
 
@@ -12,7 +13,7 @@ contract VegasMarketContact =
      * - aggregator_user: 合约的管理账户
      */
     record state = {
-        markets             : map(address, map(int, market)),
+        markets             : map(address, map(hash, market)),
         user_markets_record : map(address, map(address, map(int, market))),
         owner               : address,
         aggregator_user     : map(address, string)}
@@ -28,9 +29,11 @@ contract VegasMarketContact =
      * - total_amount: 当前预测已经投注的总金额
      * - result: 该预测的答案是什么
      * - progress: 当前预测的进度（0）进行中的状态，（1）等待结果状态，（2）已结束的状态
-     * - status: 当前预测的类型（0）聚合器模式，（1）私有模式
+     * - market_type: 当前预测的类型（0）聚合器模式，（1）私有模式
      */
     record market = {
+        market_id     : hash,
+        owner         : address,
         content       : string,
         source_url    : string,
         answers       : list(answer),
@@ -41,7 +44,7 @@ contract VegasMarketContact =
         total_amount  : int,
         result        : int,
         progress      : int,
-        status        : int}
+        market_type   : int}
 
     /**
      * 预测的答案
@@ -63,12 +66,24 @@ contract VegasMarketContact =
               aggregator_user     = {} }
 
     /**
-     * 发布一个预测，只有聚合器用户才可以发布 status=(1) 的预测
+     * 发布一个预测，只有聚合器用户才可以发布 status=(0) 的预测
+     * - content: 主题
+     * - source_url: 获取结果的地址
+     * - min_amount: 最小支付数量
+     * - over_time: 结束时间戳，从当前时间开始相加
+     * - answers: 答案结果
      */
     stateful entrypoint
         add_market : (string,string,int,int,list(answer)) => market
         add_market (content,source_url,min_amount,over_time,answers) =
+            //最低结束时间也要大于当前时间1天和小于30天
+            require(over_time >= 86400000, "OVER TIME MORE THAN 1 DAY IS REQUIRED")
+            require(over_time =< 86400000 * 30, "OVER TIME MORE THAN 30 DAY IS REQUIRED")
+
+            let market_id = Crypto.sha256(String.concat(Address.to_str(Call.caller), Int.to_str(Chain.timestamp)))
             let market = {
+                market_id     = market_id,
+                owner         = Call.caller,
                 content       = content,
                 source_url    = source_url,
                 answers       = answers,
@@ -79,13 +94,41 @@ contract VegasMarketContact =
                 total_amount  = 0,
                 result        = -1,
                 progress      = 0,
-                status        = 0}
+                market_type   = get_market_type()}
 
             switch(Map.lookup(Call.caller, state.markets))
-                Some(account) => put(state {markets[Call.caller][Chain.timestamp] = market})
-                None => put(state {markets[Call.caller = {}][Chain.timestamp] = market})
+                Some(account) => put(state {markets[Call.caller][market_id] = market})
+                None => put(state {markets[Call.caller = {}][market_id] = market})
 
             market
+
+
+
+    stateful entrypoint
+        submit_answer : (address,hash,int) => bool
+        submit_answer (market_address,market_id,answer_index) =
+            let market = get_market(market_address,market_id)
+            let answer = get_market_answer(market_address,market_id,answer_index)
+            let new_answer_user = List.insert_at(0,Call.caller,answer.accounts)
+            let new_answer  = {
+                content = answer.content,
+                accounts = new_answer_user}
+            let new_answers = List.replace_at(answer_index, new_answer, state.markets[market_address][market_id].answers)
+            put(state {markets[market_address][market_id].answers = new_answers})
+            true
+
+
+
+
+    /**
+     * add调用者是否属于可发布聚合器账户列表中
+     */
+    stateful entrypoint
+        add_aggregator_user : (address,string) => bool
+        add_aggregator_user(account,name) =
+            protocol_restrict()
+            put(state {aggregator_user[account]= name})
+            true
 
 
 
@@ -99,8 +142,53 @@ contract VegasMarketContact =
                 Some(user) => true
                 None => false
 
+    /**
+     * 当前调用者是否属于可发布聚合器账户列表中
+     */
+    function
+        get_market_type : () => int
+        get_market_type() =
+            switch(Map.lookup(Call.caller, state.aggregator_user))
+                Some(user) => 0
+                None => 1
+
+    /**
+     * 获取具体预测的答案
+     * - market_address: 发布者的地址
+     * - market_id: 发布者的具体预测
+     * - answer_index: 答案中的第几个答案
+     */
+    function
+        get_market_answer : (address,hash,int) => answer
+        get_market_answer(market_address,market_id,answer_index) =
+            switch(Map.lookup(market_address, state.markets))
+                Some(market_map) =>
+                    switch(Map.lookup(market_id, market_map))
+                        Some(market) =>  List.get(answer_index, market.answers)
+                        None => abort("DNT FIND THE ANSWER")
+                None => abort("DNT FIND THE ANSWER")
+
+    /**
+     * 获取具体预测
+     * - market_address: 发布者的地址
+     * - market_id: 发布者的具体预测
+     */
+    function
+        get_market : (address,hash) => market
+        get_market(market_address,market_id) =
+            switch(Map.lookup(market_address, state.markets))
+                Some(market_map) =>
+                    switch(Map.lookup(market_id, market_map))
+                        Some(market) =>  market
+                        None => abort("DNT FIND THE MARKET")
+                None => abort("DNT FIND THE MARKET")
 
 
+
+    function
+        protocol_restrict : () => unit
+        protocol_restrict() =
+            require(Call.origin == state.owner, "PROTOCOL_RESTRICTED")
 
 
     entrypoint
