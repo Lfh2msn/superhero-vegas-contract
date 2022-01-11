@@ -14,14 +14,17 @@ contract VegasMarketContact =
      * - user_markets_record: 已参与过投注的历史记录
      * - owner: 合约归属者
      * - aggregator_user: 合约的管理账户
+     * - orcele_trigger_count:触发等待结果状态更新为已结束状态的标记
      */
     record state = {
         markets              : map(address, map(hash, market)),
-        oracle_market        : map(hash, map(int, address)),
-        oracle_market_record : map(hash, map(int, address)),
-        user_markets_record  : map(address, map(address, map(int, market))),
+        oracle_market        : map(hash, map(int, list(address))),
+        oracle_market_count  : map(hash, int),
+        oracle_market_record : map(hash, map(address,int)),
+        user_markets_record  : map(address, map(hash,address)),
         owner                : address,
-        aggregator_user      : map(address, string)}
+        aggregator_user      : map(address, string),
+        orcele_trigger_count : int}
 
     /**
      * 预测详情信息
@@ -59,7 +62,7 @@ contract VegasMarketContact =
      */
     record answer = {
         content  : string,
-        accounts : list(address)}
+        count    : int}
 
 
     stateful entrypoint
@@ -68,10 +71,12 @@ contract VegasMarketContact =
             let owner              = Call.caller
             { markets              = {},
               oracle_market        = {},
+              oracle_market_count  = {},
               oracle_market_record = {},
               user_markets_record  = {},
               owner                = Call.caller,
-              aggregator_user      = {} }
+              aggregator_user      = {},
+              orcele_trigger_count = 1}
 
 
 
@@ -129,12 +134,12 @@ contract VegasMarketContact =
             // require(market.over_time > Chain.timestamp,"MARKET TIME OUT")
             require(market.progress == 0,"MARKET PROGRESS IS NOT START")
             let answer = get_market_answer(market_address,market_id,answer_index)
-            let new_answer_user = List.insert_at(0,Call.caller,answer.accounts)
             let new_answer  = {
                 content = answer.content,
-                accounts = new_answer_user}
+                count = answer.count + 1}
             let new_answers = List.replace_at(answer_index, new_answer, state.markets[market_address][market_id].answers)
             put(state {markets[market_address][market_id].answers = new_answers})
+            put(state {user_markets_record[market_address = {}][market_id] = Call.caller})
             true
 
 
@@ -162,10 +167,24 @@ contract VegasMarketContact =
         provide_answer (market_address,market_id,index) =
             let market = get_market(market_address,market_id)
             require(index < List.length(market.answers),"INDEX OUT ERROR")
-            require(index > 0, "INDEX OUT ERROR 0")
+            require(index >= 0, "INDEX OUT ERROR 0")
             require(is_aggregator_user(),"AGGREGATOR ERROR")
-            put(state{oracle_market[market_id][index] = Call.caller})
+            require(market.progress == 1,"MARKET PROGRESS IS NOT WAIT")
+            require(!is_oracle_market_record(market_id),"PROVIDE COUNT MARE")
+            let accounts = List.insert_at(0,Call.caller,state.oracle_market[market_id][index = []])
+            put(state{oracle_market[market_id][index] = accounts})
+            put(state{oracle_market_record[market_id = {}][Call.caller] = index})
+            put(state{oracle_market_count[market_id = 0] @ n = n + 1})
             true
+
+
+
+
+    entrypoint
+        get_oracle_market_provide_count : (hash) =>int
+        get_oracle_market_provide_count (market_id) =
+            state.oracle_market_count[market_id]
+
 
 
 
@@ -180,8 +199,61 @@ contract VegasMarketContact =
             true
 
 
+    stateful entrypoint
+        update_orcele_trigger_count : (int) => bool
+        update_orcele_trigger_count (count) =
+            put(state{orcele_trigger_count = count})
+            true
+
+
+
 
     /**
+     * 获取具体预测
+     * - market_address: 发布者的地址
+     * - market_id: 发布者的具体预测
+     */
+    entrypoint
+        get_market : (address,hash) => market
+        get_market(market_address,market_id) =
+            switch(Map.lookup(market_address, state.markets))
+                Some(market_map) =>
+                    switch(Map.lookup(market_id, market_map))
+                        Some(market) =>  market
+                        None => abort("DNT FIND THE MARKET")
+                None => abort("DNT FIND THE MARKET")
+
+    /**
+     * 管理员是否投票过
+     */
+    entrypoint
+        is_oracle_market_record : (hash) => bool
+        is_oracle_market_record(market_id) =
+            switch(Map.lookup(market_id, state.oracle_market_record))
+                Some(market_record_user) =>
+                    switch(Map.lookup(Call.caller, market_record_user))
+                        Some(result) =>  true
+                        None => false
+                None => false
+
+
+
+
+    /**
+     * 检测是否有重复的预测
+     * - market_address: 发布者的地址
+     * - market_id: 发布者的具体预测
+     */
+    function
+        restrict_repeat_market : (address,hash) => bool
+        restrict_repeat_market(market_address,market_id) =
+            switch(Map.lookup(market_address, state.markets))
+                Some(market_map) =>
+                    switch(Map.lookup(market_id, market_map))
+                        Some(market) => abort("REPEAT MARKET")
+                        None => true
+                None => true
+/**
      * 当前调用者是否属于可发布聚合器账户列表中
      */
     function
@@ -216,36 +288,6 @@ contract VegasMarketContact =
                         Some(market) =>  List.get(answer_index, market.answers)
                         None => abort("DNT FIND THE ANSWER")
                 None => abort("DNT FIND THE ANSWER")
-
-    /**
-     * 获取具体预测
-     * - market_address: 发布者的地址
-     * - market_id: 发布者的具体预测
-     */
-    entrypoint
-        get_market : (address,hash) => market
-        get_market(market_address,market_id) =
-            switch(Map.lookup(market_address, state.markets))
-                Some(market_map) =>
-                    switch(Map.lookup(market_id, market_map))
-                        Some(market) =>  market
-                        None => abort("DNT FIND THE MARKET")
-                None => abort("DNT FIND THE MARKET")
-
-    /**
-     * 检测是否有重复的预测
-     * - market_address: 发布者的地址
-     * - market_id: 发布者的具体预测
-     */
-    function
-        restrict_repeat_market : (address,hash) => bool
-        restrict_repeat_market(market_address,market_id) =
-            switch(Map.lookup(market_address, state.markets))
-                Some(market_map) =>
-                    switch(Map.lookup(market_id, market_map))
-                        Some(market) => abort("REPEAT MARKET")
-                        None => true
-                None => true
 
     function
         protocol_restrict : () => unit

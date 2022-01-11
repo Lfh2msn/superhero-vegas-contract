@@ -67,10 +67,10 @@ describe('VegasMarketContact', () => {
             0,
             [{
                 content: "answer_content0",
-                accounts: [],
+                count: 0,
             }, {
                 content: "answer_content1",
-                accounts: [],
+                count: 0,
             }]);
         marketId = result.decodedResult.market_id;
         console.log(marketId);
@@ -98,6 +98,15 @@ describe('VegasMarketContact', () => {
 
     it('Should provide_answer VegasMarketContact', async () => {
         const result = await contract.methods.provide_answer(WALLETS[0].publicKey,marketId,1);
+        console.log(JSON.stringify(result.decodedResult));
+    });
+
+    it('Should provide_answer VegasMarketContact', async () => {
+        const result = await contract.methods.provide_answer(WALLETS[0].publicKey,marketId,1);
+        console.log(JSON.stringify(result.decodedResult));
+    });
+    it('Should provide_answer VegasMarketContact', async () => {
+        const result = await contract.methods.provide_answer(WALLETS[0].publicKey,marketId,0);
         console.log(JSON.stringify(result.decodedResult));
     });
 
