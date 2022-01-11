@@ -64,7 +64,7 @@ describe('VegasMarketContact', () => {
             "content",
             "source_url",
             1,
-            86400000,
+            0,
             [{
                 content: "answer_content0",
                 accounts: [],
@@ -84,15 +84,20 @@ describe('VegasMarketContact', () => {
     });
 
 
-    it('Should submit_answer VegasMarketContact', async () => {
-        const result = await contract.methods.submit_answer(WALLETS[0].publicKey,marketId,1);
+    it('Should add_aggregator_user VegasMarketContact', async () => {
+        const result = await contract.methods.add_aggregator_user(WALLETS[0].publicKey,"Baixin");
 
         console.log(JSON.stringify(result.decodedResult));
     });
 
-    it('Should submit_answer VegasMarketContact', async () => {
-        const result = await contract.methods.submit_answer(WALLETS[0].publicKey,marketId,1);
 
+    it('Should update_market_progress_to_wait VegasMarketContact', async () => {
+        const result = await contract.methods.update_market_progress_to_wait(WALLETS[0].publicKey,marketId);
+        console.log(JSON.stringify(result.decodedResult));
+    });
+
+    it('Should provide_answer VegasMarketContact', async () => {
+        const result = await contract.methods.provide_answer(WALLETS[0].publicKey,marketId,1);
         console.log(JSON.stringify(result.decodedResult));
     });
 

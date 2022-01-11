@@ -5,18 +5,23 @@ include "List.aes"
 
 contract VegasMarketContact =
 
+
     /**
      * Vegas的合约状态
      * - markets: 存放所有用户发起的投注信息
+     * - oracle_market:小型预言机，超管提供的数据
+     * - oracle_market_record:投票的记录
      * - user_markets_record: 已参与过投注的历史记录
      * - owner: 合约归属者
      * - aggregator_user: 合约的管理账户
      */
     record state = {
-        markets             : map(address, map(hash, market)),
-        user_markets_record : map(address, map(address, map(int, market))),
-        owner               : address,
-        aggregator_user     : map(address, string)}
+        markets              : map(address, map(hash, market)),
+        oracle_market        : map(hash, map(int, address)),
+        oracle_market_record : map(hash, map(int, address)),
+        user_markets_record  : map(address, map(address, map(int, market))),
+        owner                : address,
+        aggregator_user      : map(address, string)}
 
     /**
      * 预测详情信息
@@ -28,7 +33,7 @@ contract VegasMarketContact =
      * - min_amount: 最小的投注金额
      * - total_amount: 当前预测已经投注的总金额
      * - result: 该预测的答案是什么
-     * - progress: 当前预测的进度（0）进行中的状态，（1）等待结果状态，（2）已结束的状态
+     * - progress: 当前预测的进度（0）进行中的状态，（1）等待结果状态，（2）已结束的状态 (999)作废状态，只有合约合约归属者可用
      * - market_type: 当前预测的类型（0）聚合器模式，（1）私有模式
      */
     record market = {
@@ -46,6 +51,7 @@ contract VegasMarketContact =
         progress      : int,
         market_type   : int}
 
+
     /**
      * 预测的答案
      * - content: 预测答案的内容
@@ -59,11 +65,16 @@ contract VegasMarketContact =
     stateful entrypoint
         init : () => state
         init () =
-            let owner             = Call.caller
-            { markets             = {},
-              user_markets_record = {},
-              owner               = Call.caller,
-              aggregator_user     = {} }
+            let owner              = Call.caller
+            { markets              = {},
+              oracle_market        = {},
+              oracle_market_record = {},
+              user_markets_record  = {},
+              owner                = Call.caller,
+              aggregator_user      = {} }
+
+
+
 
     /**
      * 发布一个预测，只有聚合器用户才可以发布 status=(0) 的预测
@@ -77,10 +88,12 @@ contract VegasMarketContact =
         add_market : (string,string,int,int,list(answer)) => market
         add_market (content,source_url,min_amount,over_time,answers) =
             //最低结束时间也要大于当前时间1天和小于30天
-            require(over_time >= 86400000, "OVER TIME MORE THAN 1 DAY IS REQUIRED")
-            require(over_time =< 86400000 * 30, "OVER TIME MORE THAN 30 DAY IS REQUIRED")
+            // require(over_time >= 86400000, "OVER TIME MORE THAN 1 DAY IS REQUIRED")
+            // require(over_time =< 86400000 * 30, "OVER TIME MORE THAN 30 DAY IS REQUIRED")
 
-            let market_id = Crypto.sha256(String.concat(Address.to_str(Call.caller), Int.to_str(Chain.timestamp)))
+            let market_id = generate_market_id()
+            restrict_repeat_market(Call.caller,market_id)
+
             let market = {
                 market_id     = market_id,
                 owner         = Call.caller,
@@ -103,11 +116,18 @@ contract VegasMarketContact =
             market
 
 
-
+    /**
+     * 用户提交问题
+     * - address: 发布的用户
+     * - hash: 预测id
+     * - int: 第几个答案
+     */
     stateful entrypoint
         submit_answer : (address,hash,int) => bool
         submit_answer (market_address,market_id,answer_index) =
             let market = get_market(market_address,market_id)
+            // require(market.over_time > Chain.timestamp,"MARKET TIME OUT")
+            require(market.progress == 0,"MARKET PROGRESS IS NOT START")
             let answer = get_market_answer(market_address,market_id,answer_index)
             let new_answer_user = List.insert_at(0,Call.caller,answer.accounts)
             let new_answer  = {
@@ -117,6 +137,35 @@ contract VegasMarketContact =
             put(state {markets[market_address][market_id].answers = new_answers})
             true
 
+
+    /**
+     * 更新预测到下一步，更改完后的状态用于获取场外结果，
+     * 同时也插入等待中的预测，便于UI展示
+     * - address: 发布的用户
+     * - hash: 预测id
+     */
+    stateful entrypoint
+        update_market_progress_to_wait : (address,hash)=>bool
+        update_market_progress_to_wait (market_address,market_id) =
+            let market = get_market(market_address,market_id)
+            // require(market.over_time < Chain.timestamp,"MARKET TIME NOT OUT")
+            require(market.progress == 0,"MARKET PROGRESS IS NOT START")
+            require(is_aggregator_user(),"AGGREGATOR ERROR")
+            put(state {markets[market_address][market_id].progress = 1})
+            put(state {oracle_market[market.market_id] = {}})
+            true
+
+
+
+    stateful entrypoint
+        provide_answer : (address,hash,int) =>bool
+        provide_answer (market_address,market_id,index) =
+            let market = get_market(market_address,market_id)
+            require(index < List.length(market.answers),"INDEX OUT ERROR")
+            require(index > 0, "INDEX OUT ERROR 0")
+            require(is_aggregator_user(),"AGGREGATOR ERROR")
+            put(state{oracle_market[market_id][index] = Call.caller})
+            true
 
 
 
@@ -173,7 +222,7 @@ contract VegasMarketContact =
      * - market_address: 发布者的地址
      * - market_id: 发布者的具体预测
      */
-    function
+    entrypoint
         get_market : (address,hash) => market
         get_market(market_address,market_id) =
             switch(Map.lookup(market_address, state.markets))
@@ -183,12 +232,31 @@ contract VegasMarketContact =
                         None => abort("DNT FIND THE MARKET")
                 None => abort("DNT FIND THE MARKET")
 
-
+    /**
+     * 检测是否有重复的预测
+     * - market_address: 发布者的地址
+     * - market_id: 发布者的具体预测
+     */
+    function
+        restrict_repeat_market : (address,hash) => bool
+        restrict_repeat_market(market_address,market_id) =
+            switch(Map.lookup(market_address, state.markets))
+                Some(market_map) =>
+                    switch(Map.lookup(market_id, market_map))
+                        Some(market) => abort("REPEAT MARKET")
+                        None => true
+                None => true
 
     function
         protocol_restrict : () => unit
         protocol_restrict() =
             require(Call.origin == state.owner, "PROTOCOL_RESTRICTED")
+
+
+    function
+        generate_market_id : () => hash
+        generate_market_id() =
+            Crypto.sha256(String.concat(Address.to_str(Call.caller), Int.to_str(Chain.timestamp)))
 
 
     entrypoint
