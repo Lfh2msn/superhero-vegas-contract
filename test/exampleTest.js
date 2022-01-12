@@ -62,7 +62,7 @@ describe('VegasMarketContact', () => {
     it('Should add_market VegasMarketContact', async () => {
         const result = await contract.methods.add_market(
             "content",
-            "source_url",
+            "source_url takes taking",
             1,
             0,
             [{
@@ -77,18 +77,18 @@ describe('VegasMarketContact', () => {
 
     });
 
-    it('Should submit_answer VegasMarketContact', async () => {
-        const result = await contract.methods.submit_answer(WALLETS[0].publicKey,marketId,0);
-
-        console.log(JSON.stringify(result.decodedResult));
-    });
-
-
     it('Should add_aggregator_user VegasMarketContact', async () => {
         const result = await contract.methods.add_aggregator_user(WALLETS[0].publicKey,"Baixin");
-
         console.log(JSON.stringify(result.decodedResult));
     });
+
+
+
+    it('Should submit_answer VegasMarketContact', async () => {
+        const result = await contract.methods.submit_answer(WALLETS[0].publicKey,marketId,0,{amount : 10});
+        console.log(JSON.stringify(result.decodedEvents[0].decoded));
+    });
+
 
 
     it('Should update_market_progress_to_wait VegasMarketContact', async () => {
@@ -101,14 +101,19 @@ describe('VegasMarketContact', () => {
         console.log(JSON.stringify(result.decodedResult));
     });
 
-    it('Should provide_answer VegasMarketContact', async () => {
-        const result = await contract.methods.provide_answer(WALLETS[0].publicKey,marketId,1);
+    it('Should update_market_progress_to_over VegasMarketContact', async () => {
+        const result = await contract.methods.update_market_progress_to_over(WALLETS[0].publicKey,marketId,1);
         console.log(JSON.stringify(result.decodedResult));
     });
-    it('Should provide_answer VegasMarketContact', async () => {
-        const result = await contract.methods.provide_answer(WALLETS[0].publicKey,marketId,0);
-        console.log(JSON.stringify(result.decodedResult));
+
+
+
+    it('Should receive_reward VegasMarketContact', async () => {
+        const result = await contract.methods.receive_reward(WALLETS[0].publicKey,marketId);
+        console.log(JSON.stringify(result));
     });
+
+
 
     it('Should get_state VegasMarketContact', async () => {
         const result = await contract.methods.get_state();

@@ -3,8 +3,15 @@
 include "String.aes"
 include "List.aes"
 
-contract VegasMarketContact =
+payable contract VegasMarketContact =
 
+
+    datatype event =
+        AddMarket(address, hash, int)
+        | SubmitAnswer(address, hash, int)
+        | ReceiveReward(address, int,int)
+        | ContractBalance(int)
+        | Swap(address, int)
 
     /**
      * Vegas的合约状态
@@ -18,13 +25,28 @@ contract VegasMarketContact =
      */
     record state = {
         markets              : map(address, map(hash, market)),
-        oracle_market        : map(hash, map(int, list(address))),
-        oracle_market_count  : map(hash, int),
-        oracle_market_record : map(hash, map(address,int)),
-        user_markets_record  : map(address, map(hash,address)),
+        user_markets_record  : map(address, map(hash, map(address,int))), //用户投票记录，那个账户发布的哪个预测的那个用户投票的第几个结果
+        oracle_market        : map(hash, list(int)), //哪个预测的结果合集
+        oracle_market_count  : map(hash, int), //已经预测的次数
+        oracle_market_record : map(hash, map(address, int)),//用于后期审查
+
         owner                : address,
         aggregator_user      : map(address, string),
         orcele_trigger_count : int}
+
+
+    entrypoint most_of((x :: xs) : list('a )) : 'a  =
+        most_of_(x, {[x] = 1}, xs)
+
+    function most_of_(most : 'a, counts : map('a, int), xs : list('a)) =
+        switch(xs)
+            [] => (most)
+            (x :: xs) =>
+                let counts' = counts{ [x = 0] @ n = n + 1 }
+                if (counts'[x] >= counts'[most])
+                    most_of_(x, counts', xs)
+                else
+                    most_of_(most, counts', xs)
 
     /**
      * 预测详情信息
@@ -127,19 +149,23 @@ contract VegasMarketContact =
      * - hash: 预测id
      * - int: 第几个答案
      */
-    stateful entrypoint
+    payable stateful entrypoint
         submit_answer : (address,hash,int) => bool
         submit_answer (market_address,market_id,answer_index) =
             let market = get_market(market_address,market_id)
             // require(market.over_time > Chain.timestamp,"MARKET TIME OUT")
             require(market.progress == 0,"MARKET PROGRESS IS NOT START")
+            require(!is_user_markets_record(market_address,market_id),"USER MARKETS REPEAT")
             let answer = get_market_answer(market_address,market_id,answer_index)
             let new_answer  = {
                 content = answer.content,
                 count = answer.count + 1}
             let new_answers = List.replace_at(answer_index, new_answer, state.markets[market_address][market_id].answers)
             put(state {markets[market_address][market_id].answers = new_answers})
-            put(state {user_markets_record[market_address = {}][market_id] = Call.caller})
+
+            put(state {markets[market_address][market_id].total_amount @n = n + Call.value})
+            put(state {user_markets_record[market_address = {}][market_id  = {}][Call.caller] = answer_index})
+            Chain.event(SubmitAnswer(market_address,market_id,answer_index))
             true
 
 
@@ -155,25 +181,55 @@ contract VegasMarketContact =
             let market = get_market(market_address,market_id)
             // require(market.over_time < Chain.timestamp,"MARKET TIME NOT OUT")
             require(market.progress == 0,"MARKET PROGRESS IS NOT START")
-            require(is_aggregator_user(),"AGGREGATOR ERROR")
+            // require(is_aggregator_user(),"AGGREGATOR ERROR")
             put(state {markets[market_address][market_id].progress = 1})
-            put(state {oracle_market[market.market_id] = {}})
+            put(state {oracle_market[market.market_id] = []})
             true
+
+    /**
+     * 更新预测到下一步，更改完后的状态用结束状态，领取奖金，
+     * 同时也插入等待中的预测，便于UI展示
+     * - address: 发布的用户
+     * - hash: 预测id
+     */
+    stateful entrypoint
+        update_market_progress_to_over : (address,hash)=>bool
+        update_market_progress_to_over (market_address,market_id) =
+            let market = get_market(market_address,market_id)
+            // require(market.over_time < Chain.timestamp,"MARKET TIME NOT OUT")
+            require(get_oracle_market_provide_count(market_id) >= state.orcele_trigger_count,"MARKET PROVIDE COUNT LOW")
+            require(market.progress == 1,"MARKET PROGRESS IS NOT WAIT")
+            // require(is_aggregator_user(),"AGGREGATOR ERROR")
+            put(state {markets[market_address][market_id].progress = 2})
+            true
+
+    stateful entrypoint
+        receive_reward : (address,hash)=>bool
+        receive_reward (market_address,market_id) =
+            Chain.event(ContractBalance(Contract.balance))
+            let market = get_market(market_address,market_id)
+            let reward_num = most_of(state.oracle_market[market_id])
+            Chain.spend(Call.caller,market.total_amount/reward_num)
+            Chain.event(ReceiveReward(Call.caller,reward_num,market.total_amount))
+            Chain.event(ContractBalance(Contract.balance))
+
+            true
+
 
 
 
     stateful entrypoint
         provide_answer : (address,hash,int) =>bool
-        provide_answer (market_address,market_id,index) =
+        provide_answer (market_address,market_id,market_index) =
             let market = get_market(market_address,market_id)
-            require(index < List.length(market.answers),"INDEX OUT ERROR")
-            require(index >= 0, "INDEX OUT ERROR 0")
+            require(market_index < List.length(market.answers),"INDEX OUT ERROR")
+            require(market_index >= 0, "INDEX OUT ERROR 0")
             require(is_aggregator_user(),"AGGREGATOR ERROR")
             require(market.progress == 1,"MARKET PROGRESS IS NOT WAIT")
             require(!is_oracle_market_record(market_id),"PROVIDE COUNT MARE")
-            let accounts = List.insert_at(0,Call.caller,state.oracle_market[market_id][index = []])
-            put(state{oracle_market[market_id][index] = accounts})
-            put(state{oracle_market_record[market_id = {}][Call.caller] = index})
+            let provide_data = List.insert_at(0,market_index,state.oracle_market[market_id])
+            put(state{oracle_market[market_id] = provide_data})
+            put(state{oracle_market_record[market_id = {}][Call.caller] = market_index})
             put(state{oracle_market_count[market_id = 0] @ n = n + 1})
             true
 
@@ -222,6 +278,23 @@ contract VegasMarketContact =
                         Some(market) =>  market
                         None => abort("DNT FIND THE MARKET")
                 None => abort("DNT FIND THE MARKET")
+
+    /**
+     * 当前用户是否参与过预测
+     */
+    entrypoint
+        is_user_markets_record : (address,hash) => bool
+        is_user_markets_record(market_address,market_id) =
+            switch(Map.lookup(market_address, state.user_markets_record))
+                Some(market_map) =>
+                    switch(Map.lookup(market_id, market_map))
+                        Some(account) =>
+                            switch(Map.lookup(Call.caller, account))
+                                Some(account) =>  true
+                                None => false
+                        None => false
+                None => false
+
 
     /**
      * 管理员是否投票过
