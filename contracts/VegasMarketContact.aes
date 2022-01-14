@@ -16,25 +16,34 @@ payable contract VegasMarketContact =
     /**
      * Vegas的合约状态
      * - markets: 存放所有用户发起的投注信息
-     * - oracle_market:小型预言机，超管提供的数据
-     * - oracle_market_record:投票的记录
      * - user_markets_record: 已参与过投注的历史记录
+     * - oracle_market:小型预言机，超管提供的数据
+     * - oracle_market_count:某个预测已经投票过的次数
+     * - oracle_market_record:管理员投票后的历史记录
      * - owner: 合约归属者
      * - aggregator_user: 合约的管理账户
      * - orcele_trigger_count:触发等待结果状态更新为已结束状态的标记
      */
     record state = {
+        //预测的内容，哪个用户预测的id的预测内容(用户, map(预测id, 预测细节))
         markets              : map(address, map(hash, market)),
-        user_markets_record  : map(address, map(hash, map(address,int))), //用户投票记录，那个账户发布的哪个预测的那个用户投票的第几个结果
-        oracle_market        : map(hash, list(int)), //哪个预测的结果合集
-        oracle_market_count  : map(hash, int), //已经预测的次数
-        oracle_market_record : map(hash, map(address, int)),//用于后期审查
-
+        //用户投票记录，那个账户发布的哪个预测的那个用户投票的第几个结果
+        user_markets_record  : map(address, map(hash, map(address,int))),
+        //某个预测的结果合集
+        oracle_market        : map(hash, list(int)),
+         //已经预测的次数
+        oracle_market_count  : map(hash, int),
+        //管理员投票的记录，用于后期审查
+        oracle_market_record : map(hash, map(address, int)),
+        //合约归属者
         owner                : address,
+        //管理员账户
         aggregator_user      : map(address, string),
+        //触发预测完成的次数
         orcele_trigger_count : int}
 
 
+    //获取最多投票的结果
     entrypoint most_of((x :: xs) : list('a )) : 'a  =
         most_of_(x, {[x] = 1}, xs)
 
@@ -255,15 +264,6 @@ payable contract VegasMarketContact =
             true
 
 
-    stateful entrypoint
-        update_orcele_trigger_count : (int) => bool
-        update_orcele_trigger_count (count) =
-            put(state{orcele_trigger_count = count})
-            true
-
-
-
-
     /**
      * 获取具体预测
      * - market_address: 发布者的地址
@@ -326,7 +326,7 @@ payable contract VegasMarketContact =
                         Some(market) => abort("REPEAT MARKET")
                         None => true
                 None => true
-/**
+    /**
      * 当前调用者是否属于可发布聚合器账户列表中
      */
     function
@@ -384,4 +384,4 @@ payable contract VegasMarketContact =
 
 
 
-
+    
