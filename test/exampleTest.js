@@ -120,7 +120,7 @@ describe('VegasMarketContact', () => {
 
         console.log(JSON.stringify(result.decodedResult));
     });
-
+    //86400000
 
     // it('Should check if hamster has been created', async () => {
     //     hamsterName = 'C.Hamster';
