@@ -46,7 +46,7 @@ payable contract VegasMarketContact =
 
     record config = {
         //触发预测完成的次数
-        orcele_trigger_count : int,
+        oracle_trigger_count : int,
         //预测最低的时间限制
         market_min_time      : int,
         //预测最高的时间限制
@@ -174,9 +174,9 @@ payable contract VegasMarketContact =
             //获取预测
             let market = get_market(market_address,market_id)
             //如果预测结束时间小于当前时间，提示错误
-            require(market.over_time > Chain.timestamp,"MARKET TIME OUT")
+            // require(market.over_time > Chain.timestamp,"MARKET TIME OUT")
             //如果当前支付数量小于预测规定的最新金额，提示错误
-            require(market.min_amount > Call.value,"MARKET TIME OUT")
+            require(Call.value == market.min_amount,"MARKET AMOUNT OUT")
             //如果当前的进度不是 START状态，提示错误
             require(market.progress == 0,"MARKET PROGRESS IS NOT START")
             //如果当前用户已经参与过提问的，提示错误
@@ -212,7 +212,7 @@ payable contract VegasMarketContact =
             //如果没有到达预测的结束时间，提示错误
             require(market.over_time < Chain.timestamp,"MARKET TIME NOT OUT")
             //如果如果状态不是需要预言机的结果，提示错误
-            require(market.market_type  == 0 ,"MARKET TYPE ERROR")
+            require(market.market_type  == 1 ,"MARKET TYPE ERROR")
             //如果进度 不是 START状态，提示错误
             require(market.progress == 0,"MARKET PROGRESS IS NOT START")
             //require(is_aggregator_user(),"AGGREGATOR ERROR")
@@ -235,6 +235,8 @@ payable contract VegasMarketContact =
             require(market_index < List.length(market.answers),"INDEX OUT ERROR")
             //如果提供的结果是负数提示错误
             require(market_index >= 0, "INDEX OUT ERROR 0")
+            //如果如果状态不是需要预言机的结果，提示错误
+            require(market.market_type  == 1 ,"MARKET TYPE ERROR")
             //如果不是有权限的人提供结果，提示错误
             require(is_aggregator_user(),"AGGREGATOR ERROR")
             //如果当前的进度不是等待结果 WAIT 状态，提示错误
@@ -266,11 +268,11 @@ payable contract VegasMarketContact =
             //如果没有到达预测的结束时间，提示错误
             require(market.over_time < Chain.timestamp,"MARKET TIME NOT OUT")
             //如果如果状态不是需要预言机的结果，提示错误
-            require(market.market_type  == 0 ,"MARKET TYPE ERROR")
+            require(market.market_type  == 1 ,"MARKET TYPE ERROR")
             //如果进度 不是 WAIT状态，提示错误
             require(market.progress == 1,"MARKET PROGRESS IS NOT START")
             //如果提供者提供的数据不足以达到设置的标准，提示错误
-            require(get_oracle_market_provide_count(market_id) >= state.config.orcele_trigger_count,"MARKET PROVIDE COUNT LOW")
+            require(get_oracle_market_provide_count(market_id) >= state.config.oracle_trigger_count,"MARKET PROVIDE COUNT LOW")
             // require(is_aggregator_user(),"AGGREGATOR ERROR")
             put(state {markets[market_address][market_id].progress = 2})
             //计算哪个投票最多，然后设置最终结果
@@ -314,28 +316,31 @@ payable contract VegasMarketContact =
      * 领取奖金，
      */
     stateful entrypoint
-        receive_reward : (address,hash)=>bool
+        receive_reward : (address,hash)=>int
         receive_reward (market_address,market_id) =
             //获取当前预测
             let market = get_market(market_address,market_id)
             //如果进度 不是 OVER状态，提示错误
-            require(market.progress == 1,"MARKET OVER IS NOT START")
+            require(market.progress == 2,"MARKET OVER IS NOT START")
             //如果当前用户已经参与过提问的，提示错误
             require(!is_user_markets_receive_record(market_address,market_id),"USER MARKETS REPEAT")
-            //获取当前的预测
-            let market = get_market(market_address,market_id)
-            //获取正确的答案
+            //如果当前用户没有参与过提问的，提示错误
+            require(is_user_markets_record(market_address,market_id),"USER RECORD MARKETS ERROR")
+            //如果当前用户投票和最终结果不对，提示错误
+            require(market.result == get_user_markets_record(market_address,market_id),"USER RECORD MARKETS RESULT ERROR")
+            // //获取正确的答案
             let answer = get_market_answer(market_address,market_id,market.result)
-            //计算应该发放的金额
+            // //计算应该发放的金额
             let amount = market.total_amount / answer.count
-
-            //记录当前预测已经领过奖
+            // 记录当前预测已经领过奖
             put(state {user_markets_receive_record[market_address = {}][market_id  = {}][Call.caller] = amount})
             //提取奖金
             Chain.spend(Call.caller,amount)
             Chain.event(ReceiveReward(Call.caller ,amount, market.total_amount))
 
-            true
+            amount
+
+
 
 
     /**
@@ -407,6 +412,23 @@ payable contract VegasMarketContact =
                                 None => false
                         None => false
                 None => false
+
+
+    /**
+     * 当前用户是否参与过预测
+     */
+    entrypoint
+        get_user_markets_record : (address,hash) => int
+        get_user_markets_record(market_address,market_id) =
+            switch(Map.lookup(market_address, state.user_markets_record))
+                Some(market_map) =>
+                    switch(Map.lookup(market_id, market_map))
+                        Some(account) =>
+                            switch(Map.lookup(Call.caller, account))
+                                Some(result) =>  result
+                                None => -1
+                        None => -1
+                None => -1
 
 
     /**
@@ -516,4 +538,4 @@ payable contract VegasMarketContact =
 
 
 
-    
+

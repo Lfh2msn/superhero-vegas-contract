@@ -37,8 +37,8 @@ describe('VegasMarketContact', () => {
                 {name: NETWORK_NAME, instance: node},
             ],
             compilerUrl: NETWORKS[NETWORK_NAME].compilerUrl,
-            accounts: [MemoryAccount({keypair: WALLETS[0]})],
-            address: WALLETS[0].publicKey
+            accounts: [MemoryAccount({keypair: WALLETS[3]})],
+            address: WALLETS[3].publicKey
         });
         try {
             // a filesystem object must be passed to the compiler if the contract uses custom includes
@@ -47,6 +47,7 @@ describe('VegasMarketContact', () => {
             const contract_content = contractUtils.getContractContent(EXAMPLE_CONTRACT_SOURCE);
             // initialize the contract instance
             contract = await client.getContractInstance(contract_content, {filesystem});
+            // contract = await client.getContractInstance(contract_content, {filesystem,contractAddress: "ct_2eedqnaUarwJ4Gf796hxXYqJhhsan2jows22RbQqsG67QrrU28"});
         } catch (err) {
             console.error(err);
             assert.fail('Could not initialize contract instance');
@@ -54,7 +55,11 @@ describe('VegasMarketContact', () => {
     });
 
     it('Should deploy VegasMarketContact', async () => {
-        let ctAddress = await contract.deploy([]);
+        let ctAddress = await contract.deploy([{
+            oracle_trigger_count: 0,
+            market_min_time: -1,
+            market_max_time: 86400000 * 30,
+        }]);
         console.log(ctAddress.address);
     });
 
@@ -63,7 +68,7 @@ describe('VegasMarketContact', () => {
         const result = await contract.methods.add_market(
             "content",
             "source_url takes taking",
-            1,
+            10,
             0,
             [{
                 content: "answer_content0",
@@ -76,45 +81,49 @@ describe('VegasMarketContact', () => {
         console.log(marketId);
 
     });
-
+    //
     it('Should add_aggregator_user VegasMarketContact', async () => {
-        const result = await contract.methods.add_aggregator_user(WALLETS[0].publicKey,"Baixin");
+        const result = await contract.methods.add_aggregator_user(WALLETS[3].publicKey,"Baixin");
         console.log(JSON.stringify(result.decodedResult));
     });
-
-
-
+    //
+    //
+    //
     it('Should submit_answer VegasMarketContact', async () => {
-        const result = await contract.methods.submit_answer(WALLETS[0].publicKey,marketId,0,{amount : 10});
+        const result = await contract.methods.submit_answer(WALLETS[3].publicKey,marketId,1,{amount : 10});
         console.log(JSON.stringify(result.decodedEvents[0].decoded));
     });
-
-
-
+    //
+    //
+    //
     it('Should update_market_progress_to_wait VegasMarketContact', async () => {
-        const result = await contract.methods.update_market_progress_to_wait(WALLETS[0].publicKey,marketId);
+        const result = await contract.methods.update_market_progress_to_wait(WALLETS[3].publicKey,marketId);
         console.log(JSON.stringify(result.decodedResult));
     });
-
+    //
     it('Should provide_answer VegasMarketContact', async () => {
-        const result = await contract.methods.provide_answer(WALLETS[0].publicKey,marketId,1);
+        const result = await contract.methods.provide_answer(WALLETS[3].publicKey,marketId,1);
         console.log(JSON.stringify(result.decodedResult));
     });
-
+    //
     it('Should update_market_progress_to_over VegasMarketContact', async () => {
-        const result = await contract.methods.update_market_progress_to_over(WALLETS[0].publicKey,marketId,1);
+        const result = await contract.methods.update_market_progress_to_over(WALLETS[3].publicKey,marketId);
         console.log(JSON.stringify(result.decodedResult));
     });
-
-
-
+    //
+    //
+    //
     it('Should receive_reward VegasMarketContact', async () => {
-        const result = await contract.methods.receive_reward(WALLETS[0].publicKey,marketId);
-        console.log(JSON.stringify(result));
+        try{
+            const result = await contract.methods.receive_reward(WALLETS[3].publicKey,marketId);
+            console.log(JSON.stringify(result));
+        }catch (e) {
+            console.log(e);
+        }
     });
-
-
-
+    //
+    //
+    //
     it('Should get_state VegasMarketContact', async () => {
         const result = await contract.methods.get_state();
 
