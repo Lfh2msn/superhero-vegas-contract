@@ -301,7 +301,7 @@ payable contract VegasMarketContact =
             //If the predicted end time is not reached, prompt an error
             require(market.over_time < Chain.timestamp,"MARKET TIME NOT OUT")
             //If the state is not the result of the need for the oracle, prompt an error
-            require(market.market_type == 1 ,"MARKET TYPE ERROR")
+            require(market.market_type == 0 ,"MARKET TYPE ERROR")
             //If the progress is not in the START state, prompt an error
             require(market.progress == 0,"MARKET PROGRESS IS NOT START")
             //If the data provided by the provider is not enough to meet the set standard, prompt an error
@@ -477,7 +477,7 @@ payable contract VegasMarketContact =
     function
         get_market_type : () => int
         get_market_type() =
-            if(state.owner != Call.caller) 1
+            if(state.owner == Call.caller) 1
             else 0
 
     /**
