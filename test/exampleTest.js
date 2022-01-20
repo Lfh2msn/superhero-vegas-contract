@@ -81,82 +81,87 @@ describe('VegasMarketContact', () => {
         console.log(marketId);
 
     });
-    //
-    it('Should add_aggregator_user VegasMarketContact', async () => {
-        const result = await contract.methods.add_aggregator_user(WALLETS[3].publicKey,"Baixin");
-        console.log(JSON.stringify(result.decodedResult));
-    });
-    //
-    //
-    //
-    it('Should submit_answer VegasMarketContact', async () => {
-        const result = await contract.methods.submit_answer(WALLETS[3].publicKey,marketId,1,{amount : 10});
-        console.log(JSON.stringify(result.decodedEvents[0].decoded));
-    });
-    //
-    //
-    //
-    it('Should update_market_progress_to_wait VegasMarketContact', async () => {
-        const result = await contract.methods.update_market_progress_to_wait(WALLETS[3].publicKey,marketId);
-        console.log(JSON.stringify(result.decodedResult));
-    });
-    //
-    it('Should provide_answer VegasMarketContact', async () => {
-        const result = await contract.methods.provide_answer(WALLETS[3].publicKey,marketId,1);
-        console.log(JSON.stringify(result.decodedResult));
-    });
-    //
-    it('Should update_market_progress_to_over VegasMarketContact', async () => {
-        const result = await contract.methods.update_market_progress_to_over(WALLETS[3].publicKey,marketId);
-        console.log(JSON.stringify(result.decodedResult));
-    });
-    //
-    //
-    //
-    it('Should receive_reward VegasMarketContact', async () => {
-        try{
-            const result = await contract.methods.receive_reward(WALLETS[3].publicKey,marketId);
-            console.log(JSON.stringify(result));
-        }catch (e) {
-            console.log(e);
-        }
-    });
-    //
-    //
-    //
-    it('Should get_state VegasMarketContact', async () => {
-        const result = await contract.methods.get_state();
+    //true is public ,false is private market
+    if(true){
 
-        console.log(JSON.stringify(result.decodedResult));
-    });
-    //86400000
 
-    // it('Should check if hamster has been created', async () => {
-    //     hamsterName = 'C.Hamster';
-    //     await contract.methods.createHamster(hamsterName);
-    //     const result = await contract.methods.nameExists(hamsterName);
-    //     assert.isTrue(result.decodedResult, 'hamster has not been created');
-    // });
-    //
-    // it('Should REVERT if hamster already exists', async () => {
-    //     try {
-    //         await contract.methods.createHamster('C.Hamster');
-    //         assert.fail(`createHamster didn't fail`);
-    //     } catch(err) {
-    //         assert.include(err.message, 'Name is already taken', `expected error message doesn't exist`);
-    //     }
-    // });
-    //
-    // it('Should return false if name does not exist', async () => {
-    //     hamsterName = 'DoesHamsterExist';
-    //     const result = await contract.methods.nameExists(hamsterName);
-    //     assert.isFalse(result.decodedResult);
-    // });
-    //
-    // it('Should return true if the name exists', async () => {
-    //     hamsterName = 'DoesHamsterExist';
-    //     await contract.methods.createHamster(hamsterName)
-    //     const result = await contract.methods.nameExists(hamsterName);
-    //     assert.isTrue(result.decodedResult)
-    // });
+
+        it('Should add_aggregator_user VegasMarketContact', async () => {
+            const result = await contract.methods.add_aggregator_user(WALLETS[3].publicKey,"Baixin");
+            console.log(JSON.stringify(result.decodedResult));
+        });
+        //
+        //
+        //
+        it('Should submit_answer VegasMarketContact', async () => {
+            const result = await contract.methods.submit_answer(WALLETS[3].publicKey,marketId,1,{amount : 10});
+            console.log(JSON.stringify(result.decodedEvents[0].decoded));
+        });
+        //
+        //
+        //
+        it('Should update_market_progress_to_wait VegasMarketContact', async () => {
+            const result = await contract.methods.update_market_progress_to_wait(WALLETS[3].publicKey,marketId);
+            console.log(JSON.stringify(result.decodedResult));
+        });
+        //
+        it('Should provide_answer VegasMarketContact', async () => {
+            const result = await contract.methods.provide_answer(WALLETS[3].publicKey,marketId,1);
+            console.log(JSON.stringify(result.decodedResult));
+        });
+        //
+        it('Should update_market_progress_to_over VegasMarketContact', async () => {
+            const result = await contract.methods.update_market_progress_to_over(WALLETS[3].publicKey,marketId);
+            console.log(JSON.stringify(result.decodedResult));
+        });
+
+
+        it('Should receive_reward VegasMarketContact', async () => {
+            try{
+                const result = await contract.methods.receive_reward(WALLETS[3].publicKey,marketId);
+                console.log(JSON.stringify(result));
+            }catch (e) {
+                console.log(e);
+            }
+        });
+        //
+        //
+        //
+        it('Should get_state VegasMarketContact', async () => {
+            const result = await contract.methods.get_state();
+
+            console.log(JSON.stringify(result.decodedResult));
+        });
+    }else{
+
+
+        it('Should submit_answer VegasMarketContact', async () => {
+            const result = await contract.methods.submit_answer(WALLETS[3].publicKey,marketId,1,{amount : 10});
+            console.log(JSON.stringify(result.decodedEvents[0].decoded));
+        });
+
+        it('Should private_update_market_progress_to_over VegasMarketContact', async () => {
+            const result = await contract.methods.private_update_market_progress_to_over(WALLETS[3].publicKey,marketId,1);
+            console.log(JSON.stringify(result.decodedResult));
+        });
+
+
+        it('Should receive_reward VegasMarketContact', async () => {
+            try{
+                const result = await contract.methods.receive_reward(WALLETS[3].publicKey,marketId);
+                console.log(JSON.stringify(result));
+            }catch (e) {
+                console.log(e);
+            }
+        });
+        //
+        //
+        //
+        it('Should get_state VegasMarketContact', async () => {
+            const result = await contract.methods.get_state();
+
+            console.log(JSON.stringify(result.decodedResult));
+        });
+    }
+
 });
