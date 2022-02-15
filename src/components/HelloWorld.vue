@@ -38,7 +38,7 @@ import VegasMarketContract from "../contracts/VegasMarketContract"
 
 const NETWORKS = require('../config/network.json');
 
-const DEFAULT_NETWORK_NAME = 'testnet';
+const DEFAULT_NETWORK_NAME = 'mainnet';
 
 const {defaultWallets: WALLETS} = require('../config/wallets.json');
 
