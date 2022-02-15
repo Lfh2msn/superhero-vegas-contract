@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@aeternity/aepp-sdk@^8.2.0":
-  version "8.2.1"
-  resolved "https://registry.yarnpkg.com/@aeternity/aepp-sdk/-/aepp-sdk-8.2.1.tgz#62f02d62cc20613d5cada68972bc7b1fe950021d"
-  integrity sha512-6rh9t3Esfpp9F9l5snyjKoJH0we/PtfsB8PafCeofapEgvBfIJAnrnwQ+KPNTHWBETURe8Ewfvgvgt9bhmiTxg==
+"@aeternity/aepp-sdk@8.2.0":
+  version "8.2.0"
+  resolved "https://registry.yarnpkg.com/@aeternity/aepp-sdk/-/aepp-sdk-8.2.0.tgz#214c3cf79d52dbabe74cdfceb4557ca06490a88e"
+  integrity sha512-M0jr+9iXbskPWasBBLXgMsKxZqwL8zAvOcwfRHjKyYNjHgO/iATT+xYgj15FJi4apvDubipQyjZ74EVavNGcHQ==
   dependencies:
     "@aeternity/bip39" "^0.1.0"
     "@aeternity/json-bigint" "^0.3.1"
@@ -3850,7 +3850,7 @@ eventemitter3@^4.0.0:
 
 events@^3.0.0:
   version "3.3.0"
-  resolved "https://registry.npmmirror.com/events/-/events-3.3.0.tgz#31a95ad0a924e2d2c419a813aeb2c4e878ea7400"
+  resolved "https://registry.yarnpkg.com/events/-/events-3.3.0.tgz#31a95ad0a924e2d2c419a813aeb2c4e878ea7400"
   integrity sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==
 
 eventsource@^1.0.7:

@@ -1,5 +1,6 @@
 export default
-`@compiler >= 6
+`
+@compiler >= 6
 
 include "String.aes"
 include "List.aes"
@@ -364,6 +365,18 @@ payable contract VegasMarketContact =
             put(state {aggregator_user[account]= name})
             true
 
+
+    /**
+     * 获取公共具体预测
+     * - market_address: 发布者的地址
+     * - market_id: 发布者的具体预测
+     */
+    entrypoint
+        get_market_public : (address) => map(hash, market)
+        get_market_public(market_address) =
+            switch(Map.lookup(market_address, state.markets))
+                Some(market_map) => market_map
+                None => abort("DNT FIND THE MARKET")
 
     /**
      * 获取具体预测

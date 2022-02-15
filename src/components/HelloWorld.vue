@@ -26,6 +26,11 @@
     <br/>
     <button @click="receive_reward">receive_reward</button>
 
+
+    <br/>
+    <button @click="get_state">get_state</button>
+
+
   </div>
 </template>
 
@@ -33,14 +38,52 @@
 
 
 import {MemoryAccount, Node, Universal} from '@aeternity/aepp-sdk/'
+import VegasMarketContract from "@/contracts/VegasMarketContract";
 
-import VegasMarketContract from "../contracts/VegasMarketContract"
+// import VegasMarketContract from "../contracts/VegasMarketContract"
 
 const NETWORKS = require('../config/network.json');
+// const VegasMarketContractACI = require('../contracts/VegasMarketContract.json');
 
 const DEFAULT_NETWORK_NAME = 'mainnet';
 
 const {defaultWallets: WALLETS} = require('../config/wallets.json');
+
+
+// const listTestContract = `
+//
+// @compiler >= 6
+//
+// include "String.aes"
+// include "List.aes"
+//
+//
+// contract CryptoHamster =
+//
+//     record state = {
+//         hamster : map(int,hamster)}
+//
+//     record hamster = {
+//         children : list(chlidrenHamster),
+//         name : string}
+//
+//     record chlidrenHamster = {
+//         id : int,
+//         name : string}
+//
+//     stateful entrypoint init() =
+//         { hamster = {} }
+//
+//     stateful entrypoint setHamster(hamsters : list(chlidrenHamster)) =
+//        put(state {hamster[0].children = hamsters})
+//        hamsters
+//
+//     entrypoint
+//         get_state:()=>state
+//         get_state() =
+//             state
+//
+// `
 
 let contract;
 let marketId;
@@ -59,15 +102,32 @@ export default {
       const sdkInstance = await Universal({
         compilerUrl: NETWORKS[DEFAULT_NETWORK_NAME].compilerUrl,
         nodes: [{name: DEFAULT_NETWORK_NAME, instance: nodeInstance}],
-        accounts: [MemoryAccount({keypair: WALLETS[3]})],
+        accounts: [MemoryAccount({keypair: WALLETS[0]})],
       });
-      contract = await sdkInstance.getContractInstance(VegasMarketContract);
-      let ctAddress = await contract.deploy([{
-        oracle_trigger_count: 0,
-        market_min_time: -1,
-        market_max_time: 86400000 * 30,
-      }]);
-      console.log(ctAddress.address);
+      // contract = await sdkInstance.getContractInstance( {source:listTestContract});
+      contract = await sdkInstance.getContractInstance( VegasMarketContract,{ contractAddress: "ct_bM6qsr3fv5qtn43zXAPofrhQumubhcG6xSm5s9A97LPpgTZrq" });
+      // contract = await sdkInstance.getContractInstance({source:VegasMarketContract, contractAddress: "ct_MApycLJfLz8yxCkUkmUvCC1Lo9VkEDyAkrR8iaJAeny35KB89" });
+      // contract = await sdkInstance.getContractInstance(VegasMarketContract,{ aci: VegasMarketContractACI, contractAddress: "ct_MApycLJfLz8yxCkUkmUvCC1Lo9VkEDyAkrR8iaJAeny35KB89" });
+
+      // let contractAci = await sdkInstance.contractGetACI( VegasMarketContract);
+      // console.log(JSON.stringify(contractAci));
+      // console.log(contractAci);
+      console.log(contract);
+
+
+      // let ctAddress = await contract.deploy();
+      // console.log(ctAddress.address);
+      // const result = await contract.methods.get_state();
+      // console.log( result.decodedResult);
+      //
+      // let ctAddress = await contract.deploy([{
+      //   oracle_trigger_count: 0,
+      //   market_min_time: -1,
+      //   market_max_time: 86400000 * 30,
+      // }]);
+      // console.log(ctAddress.address);
+      // const result = await contract.methods.get_state();
+      // console.log( result.decodedResult);
     },
 
     add_market: async function () {
@@ -88,43 +148,43 @@ export default {
     },
 
     add_aggregator_user: async function () {
-      const result = await contract.methods.add_aggregator_user(WALLETS[3].publicKey, "Baixin");
+      const result = await contract.methods.add_aggregator_user(WALLETS[0].publicKey, "Baixin");
       console.log(JSON.stringify(result.decodedResult));
     },
 
     submit_answer: async function () {
-      const result = await contract.methods.submit_answer(WALLETS[3].publicKey, marketId, 1, {amount: 10});
+      const result = await contract.methods.submit_answer(WALLETS[0].publicKey, marketId, 1, {amount: 10});
       console.log(JSON.stringify(result.decodedEvents[0].decoded));
     },
 
     update_market_progress_to_wait: async function () {
-      const result = await contract.methods.update_market_progress_to_wait(WALLETS[3].publicKey, marketId);
+      const result = await contract.methods.update_market_progress_to_wait(WALLETS[0].publicKey, marketId);
       console.log(JSON.stringify(result.decodedResult));
     },
 
     provide_answer: async function () {
-      const result = await contract.methods.provide_answer(WALLETS[3].publicKey, marketId, 1);
+      const result = await contract.methods.provide_answer(WALLETS[0].publicKey, marketId, 1);
       console.log(JSON.stringify(result.decodedResult));
     },
 
     update_market_progress_to_over: async function () {
-      const result = await contract.methods.update_market_progress_to_over(WALLETS[3].publicKey, marketId);
+      const result = await contract.methods.update_market_progress_to_over(WALLETS[0].publicKey, marketId);
       console.log(JSON.stringify(result.decodedResult));
     },
 
     receive_reward: async function () {
-      const result = await contract.methods.receive_reward(WALLETS[3].publicKey, marketId);
+      const result = await contract.methods.receive_reward(WALLETS[0].publicKey, marketId);
       console.log(JSON.stringify(result));
     },
 
 
     private_update_market_progress_to_over: async function () {
-      const result = await contract.methods.receive_reward(WALLETS[3].publicKey, marketId);
+      const result = await contract.methods.receive_reward(WALLETS[0].publicKey, marketId);
       console.log(JSON.stringify(result));
     },
 
     get_state: async function () {
-      const result = await contract.methods.get_state();
+      const result = await contract.methods.get_state({gasPrice:1000000000,gas:1000000});
       console.log(JSON.stringify(result.decodedResult));
     },
 
