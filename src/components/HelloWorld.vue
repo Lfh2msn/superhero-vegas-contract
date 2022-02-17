@@ -30,7 +30,8 @@
     <br/>
     <button @click="get_state">get_state</button>
 
-
+    <br/>
+    <button @click="aex9_balance">aex9_balance</button>
   </div>
 </template>
 
@@ -40,50 +41,16 @@
 import {MemoryAccount, Node, Universal} from '@aeternity/aepp-sdk/'
 import VegasMarketContract from "@/contracts/VegasMarketContract";
 
-// import VegasMarketContract from "../contracts/VegasMarketContract"
 
 const NETWORKS = require('../config/network.json');
 // const VegasMarketContractACI = require('../contracts/VegasMarketContract.json');
+// const AEX9_ACI = require('../contracts/AEX9.json');
 
 const DEFAULT_NETWORK_NAME = 'mainnet';
 
 const {defaultWallets: WALLETS} = require('../config/wallets.json');
 
 
-// const listTestContract = `
-//
-// @compiler >= 6
-//
-// include "String.aes"
-// include "List.aes"
-//
-//
-// contract CryptoHamster =
-//
-//     record state = {
-//         hamster : map(int,hamster)}
-//
-//     record hamster = {
-//         children : list(chlidrenHamster),
-//         name : string}
-//
-//     record chlidrenHamster = {
-//         id : int,
-//         name : string}
-//
-//     stateful entrypoint init() =
-//         { hamster = {} }
-//
-//     stateful entrypoint setHamster(hamsters : list(chlidrenHamster)) =
-//        put(state {hamster[0].children = hamsters})
-//        hamsters
-//
-//     entrypoint
-//         get_state:()=>state
-//         get_state() =
-//             state
-//
-// `
 
 let contract;
 let marketId;
@@ -105,11 +72,12 @@ export default {
         accounts: [MemoryAccount({keypair: WALLETS[0]})],
       });
       // contract = await sdkInstance.getContractInstance( {source:listTestContract});
-      contract = await sdkInstance.getContractInstance( VegasMarketContract,{ contractAddress: "ct_bM6qsr3fv5qtn43zXAPofrhQumubhcG6xSm5s9A97LPpgTZrq" });
-      // contract = await sdkInstance.getContractInstance({source:VegasMarketContract, contractAddress: "ct_MApycLJfLz8yxCkUkmUvCC1Lo9VkEDyAkrR8iaJAeny35KB89" });
+      contract = await sdkInstance.getContractInstance( VegasMarketContract)
+      // contract = await sdkInstance.getContractInstance( VegasMarketContract,{ contractAddress: "ct_bM6qsr3fv5qtn43zXAPofrhQumubhcG6xSm5s9A97LPpgTZrq" });
+      // contract = await sdkInstance.getContractInstance({aci:AEX9_ACI, contractAddress: "ct_7UfopTwsRuLGFEcsScbYgQ6YnySXuyMxQWhw6fjycnzS5Nyzq" });
       // contract = await sdkInstance.getContractInstance(VegasMarketContract,{ aci: VegasMarketContractACI, contractAddress: "ct_MApycLJfLz8yxCkUkmUvCC1Lo9VkEDyAkrR8iaJAeny35KB89" });
 
-      // let contractAci = await sdkInstance.contractGetACI( VegasMarketContract);
+      // let contractAci = await sdkInstance.contractGetACI( listTestContract);
       // console.log(JSON.stringify(contractAci));
       // console.log(contractAci);
       console.log(contract);
@@ -117,19 +85,40 @@ export default {
 
       // let ctAddress = await contract.deploy();
       // console.log(ctAddress.address);
-      // const result = await contract.methods.get_state();
-      // console.log( result.decodedResult);
+
       //
-      // let ctAddress = await contract.deploy([{
-      //   oracle_trigger_count: 0,
-      //   market_min_time: -1,
-      //   market_max_time: 86400000 * 30,
-      // }]);
-      // console.log(ctAddress.address);
+      let ctAddress = await contract.deploy([{
+        oracle_trigger_count: 0,
+        market_min_time: -1,
+        market_max_time: 86400000 * 30,
+        record_max_count: 3,
+      }]);
+      console.log(ctAddress.address);
+
+      await this.add_market();
+      await this.get_state();
+      await this.submit_answer();
+      await this.get_state();
+      await this.add_aggregator_user();
+      await this.get_state();
+      await this.update_market_progress_to_wait();
+      await this.get_state();
+      await this.provide_answer();
+      await this.get_state();
+      await this.update_market_progress_to_over();
+      await this.get_state();
+
+      await this.receive_reward();
+      await this.get_state();
+
+
       // const result = await contract.methods.get_state();
       // console.log( result.decodedResult);
     },
-
+    aex9_balance: async function () {
+      const result = await contract.methods.balance("ak_idkx6m3bgRr7WiKXuB8EBYBoRqVsaSc6qo4dsd23HKgj3qiCF");
+      console.log( result.decodedResult);
+    },
     add_market: async function () {
       const result = await contract.methods.add_market(
           "content",
