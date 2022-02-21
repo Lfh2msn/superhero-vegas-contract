@@ -1,12 +1,12 @@
 <template>
   <div id="app">
     <hello-world/>
-    
+
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import HelloWorld from './components/VegasTest.vue'
 
 
 
@@ -17,7 +17,7 @@ export default {
   components: {
     HelloWorld
   },
- 
+
 
 }
 </script>
