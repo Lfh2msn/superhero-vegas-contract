@@ -101,15 +101,15 @@ export default {
       await this.get_state();
       await this.add_aggregator_user();
       await this.get_state();
-      await this.update_market_progress_to_wait();
-      await this.get_state();
-      await this.provide_answer();
-      await this.get_state();
-      await this.update_market_progress_to_over();
-      await this.get_state();
-
-      await this.receive_reward();
-      await this.get_state();
+      // await this.update_market_progress_to_wait();
+      // await this.get_state();
+      // await this.provide_answer();
+      // await this.get_state();
+      // await this.update_market_progress_to_over();
+      // await this.get_state();
+      //
+      // await this.receive_reward();
+      // await this.get_state();
 
 
       // const result = await contract.methods.get_state();

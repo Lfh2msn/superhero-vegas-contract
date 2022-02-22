@@ -1,6 +1,5 @@
 export default
 `
-
 @compiler >= 6
 
 include "String.aes"
@@ -109,6 +108,10 @@ payable contract VegasMarketContact =
         total_amount   : int,
         //当前主题一共被领取了多少
         receive_amount : int,
+        //多少人进行了投注
+        put_count      : int,
+        //多少人领取了奖金
+        receive_count  : int,
         //最终产生的结果
         result         : int,
         //当前属于什么进度
@@ -181,13 +184,14 @@ payable contract VegasMarketContact =
                 min_amount     = min_amount,
                 total_amount   = 0,
                 receive_amount = 0,
+                put_count      = 0,
+                receive_count  = 0,
                 result         = -1,
                 progress       = 0,
                 market_type    = get_market_type()}
             put(state {markets[Call.caller = {}][market_id] = market})
             put(state {markets_start[Call.caller = {}][market_id] = market})
             market
-
 
 
     /**
@@ -220,6 +224,8 @@ payable contract VegasMarketContact =
             put(state {markets[market_address][market_id].answers = new_answers})
             //更新保存当前投注的总额
             put(state {markets[market_address][market_id].total_amount @n = n + Call.value})
+            //更新投注的次数
+            put(state {markets[market_address][market_id].put_count @n = n + 1})
             //记录当前预测已经投票
             put(state {user_markets_record[market_address = {}][market_id  = {}][Call.caller] = answer_index})
             //更新进行中的预测为最新状态
@@ -395,11 +401,11 @@ payable contract VegasMarketContact =
 
             //设置已经领取的了多少数量
             put(state {markets[market_address][market_id].receive_amount  @ n = n + amount})
+            put(state {markets[market_address][market_id].receive_count  @ n = n + 1})
             put(state {markets_over[market_address][market_id].receive_amount  @ n = n + amount})
+            put(state {markets_over[market_address][market_id].receive_count  @ n = n + 1})
             //提取奖金
             Chain.spend(Call.caller,amount)
-
-
 
             Chain.event(ReceiveReward(Call.caller ,amount, market.total_amount))
 
@@ -524,8 +530,8 @@ payable contract VegasMarketContact =
      * 获取进行中的预测
      */
     entrypoint
-        get_markets_start : (address,hash) => map(hash, market)
-        get_markets_start(market_address,market_id) =
+        get_markets_start : (address) => map(hash, market)
+        get_markets_start(market_address) =
             switch(Map.lookup(market_address, state.markets_start))
                 Some(market_map) =>
                     market_map
@@ -535,8 +541,8 @@ payable contract VegasMarketContact =
      * 获取等待结果的预测
      */
     entrypoint
-        get_markets_wait : (address,hash) => map(hash, market)
-        get_markets_wait(market_address,market_id) =
+        get_markets_wait : (address) => map(hash, market)
+        get_markets_wait(market_address) =
             switch(Map.lookup(market_address, state.markets_wait))
                 Some(market_map) =>
                     market_map
@@ -546,8 +552,8 @@ payable contract VegasMarketContact =
      * 获取等待结果的预测
      */
     entrypoint
-        get_markets_over : (address,hash) => map(hash, market)
-        get_markets_over(market_address,market_id) =
+        get_markets_over : (address) => map(hash, market)
+        get_markets_over(market_address) =
             switch(Map.lookup(market_address, state.markets_over))
                 Some(market_map) =>
                     market_map
@@ -664,13 +670,6 @@ payable contract VegasMarketContact =
         get_state:()=>state
         get_state () =
             state
-
-
-
-
-
-
-
 
 
 
