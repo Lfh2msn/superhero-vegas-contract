@@ -54,6 +54,7 @@ const {defaultWallets: WALLETS} = require('../config/wallets.json');
 
 let contract;
 let marketId;
+let sdkInstance;
 export default {
   name: 'HelloWorld',
   props: {
@@ -65,8 +66,8 @@ export default {
 
   methods: {
     deploy: async function () {
-      const nodeInstance = await Node({url: NETWORKS[DEFAULT_NETWORK_NAME].nodeUrl});
-      const sdkInstance = await Universal({
+      let nodeInstance = await Node({url: NETWORKS[DEFAULT_NETWORK_NAME].nodeUrl});
+      sdkInstance = await Universal({
         compilerUrl: NETWORKS[DEFAULT_NETWORK_NAME].compilerUrl,
         nodes: [{name: DEFAULT_NETWORK_NAME, instance: nodeInstance}],
         accounts: [MemoryAccount({keypair: WALLETS[0]})],
@@ -89,8 +90,8 @@ export default {
       //
       let ctAddress = await contract.deploy([{
         oracle_trigger_count: 0,
-        market_min_time: -1,
-        market_max_time: 86400000 * 30,
+        market_min_height: 1,
+        market_max_height: 480 * 30,
         record_max_count: 3,
       }]);
       console.log(ctAddress.address);
@@ -120,11 +121,12 @@ export default {
       console.log( result.decodedResult);
     },
     add_market: async function () {
+      const height = await sdkInstance.height() + 480;
       const result = await contract.methods.add_market(
           "content",
           "source_url takes taking",
           10,
-          0,
+          height,
           [{
             content: "answer_content0",
             count: 0,

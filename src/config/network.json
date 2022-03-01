@@ -5,8 +5,8 @@
         "middlewareUrl": "https://testnet.aeternity.io/mdw"
     },
     "mainnet": {
-        "nodeUrl": "https://mainnet.aeternity.io",
-        "compilerUrl": "https://latest.compiler.aepps.com",
+        "nodeUrl": "https://node.aeasy.io",
+        "compilerUrl": "https://compiler.aeasy.io",
         "middlewareUrl": "https://mainnet.aeternity.io/mdw"
     },
     "local": {
