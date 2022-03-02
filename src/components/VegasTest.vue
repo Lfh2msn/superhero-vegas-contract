@@ -96,12 +96,12 @@ export default {
       }]);
       console.log(ctAddress.address);
 
-      await this.add_market();
-      await this.get_state();
-      await this.submit_answer();
-      await this.get_state();
-      await this.add_aggregator_user();
-      await this.get_state();
+      // await this.add_market();
+      // await this.get_state();
+      // await this.submit_answer();
+      // await this.get_state();
+      // await this.add_aggregator_user();
+      // await this.get_state();
       // await this.update_market_progress_to_wait();
       // await this.get_state();
       // await this.provide_answer();
