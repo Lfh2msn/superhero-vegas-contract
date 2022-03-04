@@ -73,8 +73,8 @@ export default {
         accounts: [MemoryAccount({keypair: WALLETS[0]})],
       });
       // contract = await sdkInstance.getContractInstance( {source:listTestContract});
-      contract = await sdkInstance.getContractInstance( VegasMarketContract)
-      // contract = await sdkInstance.getContractInstance( VegasMarketContract,{ contractAddress: "ct_bM6qsr3fv5qtn43zXAPofrhQumubhcG6xSm5s9A97LPpgTZrq" });
+      // contract = await sdkInstance.getContractInstance( VegasMarketContract)
+      contract = await sdkInstance.getContractInstance( VegasMarketContract,{ contractAddress: "ct_iJXHVLfBLeFPhQ4PFSxwL5SWhpuferJbuExAyfKVsguMeQcxR" });
       // contract = await sdkInstance.getContractInstance({aci:AEX9_ACI, contractAddress: "ct_7UfopTwsRuLGFEcsScbYgQ6YnySXuyMxQWhw6fjycnzS5Nyzq" });
       // contract = await sdkInstance.getContractInstance(VegasMarketContract,{ aci: VegasMarketContractACI, contractAddress: "ct_MApycLJfLz8yxCkUkmUvCC1Lo9VkEDyAkrR8iaJAeny35KB89" });
 
@@ -88,13 +88,13 @@ export default {
       // console.log(ctAddress.address);
 
       //
-      let ctAddress = await contract.deploy([{
-        oracle_trigger_count: 0,
-        market_min_height: 1,
-        market_max_height: 480 * 30,
-        record_max_count: 3,
-      }]);
-      console.log(ctAddress.address);
+      // let ctAddress = await contract.deploy([{
+      //   oracle_trigger_count: 0,
+      //   market_min_height: 1,
+      //   market_max_height: 480 * 30,
+      //   record_max_count: 3,
+      // }]);
+      // console.log(ctAddress.address);
 
       // await this.add_market();
       // await this.get_state();

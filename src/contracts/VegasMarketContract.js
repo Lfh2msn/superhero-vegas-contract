@@ -150,7 +150,6 @@ payable contract VegasMarketContact =
               aggregator_user             = {},
               config                      = config}
 
-
     /**
      * 发布一个预测，只有聚合器用户才可以发布 status=(0) 的预测
      * - content: 主题
@@ -654,18 +653,23 @@ payable contract VegasMarketContact =
 
 
     //获取最多投票的结果
-    entrypoint most_of((x :: xs) : list('a )) : 'a  =
-        most_of_(x, {[x] = 1}, xs)
+    function 
+        most_of : (list('a)) => 'a
+        most_of((x :: xs) ) =
+            most_of_(x, {[x] = 1}, xs)
 
-    function most_of_(most : 'a, counts : map('a, int), xs : list('a)) =
-        switch(xs)
-            [] => (most)
-            (x :: xs) =>
-                let counts' = counts{ [x = 0] @ n = n + 1 }
-                if (counts'[x] >= counts'[most])
-                    most_of_(x, counts', xs)
-                else
-                    most_of_(most, counts', xs)
+
+    function 
+        most_of_ : ('a, map('a, int), list('a)) => 'a
+        most_of_(most, counts , xs) =
+            switch(xs)
+                [] => (most)
+                (x :: xs) =>
+                    let counts' = counts{ [x = 0] @ n = n + 1 }
+                    if (counts'[x] >= counts'[most])
+                        most_of_(x, counts', xs)
+                    else
+                        most_of_(most, counts', xs)
 
     entrypoint
         get_config:() => config
@@ -676,16 +680,6 @@ payable contract VegasMarketContact =
         get_state:()=>state
         get_state () =
             state
-
-
-
-
-
-
-
-
-
-
 
 
 
