@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import HelloWorld from './components/VegasTest.vue'
+import HelloWorld from './components/AensTest.vue'
 
 
 

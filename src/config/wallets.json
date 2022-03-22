@@ -1,8 +1,8 @@
 {
     "defaultWallets": [
         {
-            "publicKey": "ak_idkx6m3bgRr7WiKXuB8EBYBoRqVsaSc6qo4dsd23HKgj3qiCF",
-            "secretKey": "d03826de64d010f683b4aee0ac67e074e01725bb6f94c6d26942ab5a5671886a5e88d722246295cefec3143d2cf2212347aac960d0b3ea4abe03fba86ce0dc2e"
+            "publicKey": "ak_CNcf2oywqbgmVg3FfKdbHQJfB959wrVwqfzSpdWVKZnep7nj4",
+            "secretKey": "208bd30b0743f3f44b6586fd3c80c2787941d60ecb332c56bd64e2729d2b43e719d2b260a10d707b3e139a670d040a5348f4bfefb6e3c718915b1319deddee98"
         }
     ]
 }
